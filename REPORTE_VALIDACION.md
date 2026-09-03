@@ -2,7 +2,7 @@
 
 Fecha de revisión local: 2 de septiembre de 2026  
 Fuente autorizada: `Datos_sinteticos_LogiFresh_dashboard.xlsx`  
-Estado: repositorio público creado; validación de GitHub Pages pendiente
+Estado: publicado y verificado en GitHub Pages
 
 ## 1. Objetivo y decisión
 
@@ -137,3 +137,29 @@ El piloto mide y valida antes de atribuir causalidad. Un cambio posterior no dem
 - Suma de reclamaciones: 15 valores no nulos/no cero de `reclamacion_mxn`.
 - Toda cifra filtrada se recalcula en el navegador desde `data.js`; no se promedian tasas de grupos.
 - Los registros visibles conservan `id_embarque` para localizar la fila fuente.
+
+## 12. Verificación en GitHub Pages
+
+- URL pública: <https://e464883-bot.github.io/ai-tools-logifresh-lopez-hernandez-elias/>
+- Repositorio: <https://github.com/e464883-bot/ai-tools-logifresh-lopez-hernandez-elias>
+- Fuente de publicación: rama `main`, carpeta `/ (root)`.
+- HTTPS: obligatorio y activo mediante el dominio predeterminado de GitHub Pages.
+- Verificación ejecutada: 2 de septiembre de 2026, zona `America/Mexico_City`.
+
+Resultados observados directamente en la URL pública:
+
+| Prueba pública | Resultado | Estado |
+|---|---|---|
+| Apertura y título | `LogiFresh | Control operativo`; encabezado con brecha de 13.3 pp | Cumple |
+| Datos y recursos | `data.js` relativo cargó 240 registros y permitió renderizar 4 SVG | Cumple |
+| KPIs iniciales | 240; 76.7%; 51.8 min; 52; 9; $882,549; 8.5/10 | Cumple con salvedad de control |
+| Filtro Centro | 60 embarques; SLA 76.7%; $367,550 | Cumple |
+| Centro + Estándar | 20 embarques; SLA 80.0%; 57.8 min; 5 incidentes; $214,550 | Cumple |
+| Propagación | Título, KPIs, 4 resúmenes, panel Hechos y tabla cambiaron | Cumple |
+| Restablecimiento | Regresó a 240 y anunció el cambio por `aria-live` | Cumple |
+| Estado vacío | `ZZZ` produjo 0, “No calculable”, 4 estados sin datos y recuperación visible | Cumple |
+| Búsqueda | `LF-0185` devolvió exactamente una fila | Cumple |
+| Móvil | 390 × 844, sin overflow del documento; gráficas/KPIs a una columna | Cumple |
+| Consola de la página | Sin errores ni advertencias originados por el sitio | Cumple |
+
+El navegador mostró una advertencia perteneciente a la extensión de control de Chrome; se excluyó porque su URL de origen era `chrome-extension://` y no forma parte del dashboard.
