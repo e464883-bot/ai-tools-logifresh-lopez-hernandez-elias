@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Dashboard interactivo de operaciones LogiFresh con datos sintéticos, métricas SLA y trazabilidad.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f766e'/%3E%3Cpath d='M17 17v30h31v-8H26V17z' fill='white'/%3E%3C/svg%3E">
+  <title>LogiFresh | Control operativo</title>
+  <style>
+    :root {
+      --ink: #102a2b;
+      --muted: #5d6e6d;
+      --paper: #f4f7f5;
+      --card: #ffffff;
+      --line: #d8e2df;
+      --brand: #0f766e;
+      --brand-dark: #09564f;
+      --brand-soft: #dff3ef;
+      --accent: #d97706;
+      --alert: #b42318;
+      --alert-soft: #fee9e7;
+      --ok: #18794e;
+      --shadow: 0 12px 32px rgba(16, 42, 43, .08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    button, input, select { font: inherit; }
+    button, select, input { min-height: 44px; }
+    a { color: var(--brand-dark); }
+    .skip-link {
+      position: fixed;
+      left: 12px;
+      top: -80px;
+      z-index: 100;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: white;
+      border-radius: 8px;
+    }
+    .skip-link:focus { top: 12px; }
+    :focus-visible { outline: 3px solid #f5a623; outline-offset: 3px; }
+    .shell { width: min(1480px, calc(100% - 32px)); margin: 0 auto; }
+    .hero {
+      background: linear-gradient(120deg, #092f30 0%, #0d5d58 68%, #0f766e 100%);
+      color: white;
+      padding: 34px 0 28px;
+      border-bottom: 4px solid #76d6c8;
+    }
+    .hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; }
+    .eyebrow { margin: 0 0 8px; color: #a8e8df; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; font-size: .78rem; }
+    h1 { margin: 0; max-width: 900px; font-size: clamp(1.8rem, 3.5vw, 3.2rem); line-height: 1.08; letter-spacing: -.035em; }
+    .hero-copy { max-width: 900px; margin: 14px 0 0; color: #e0f4f0; font-size: 1.02rem; }
+    .meta-stack { display: grid; gap: 8px; justify-items: end; text-align: right; font-size: .84rem; color: #d9eeeb; }
+    .target-badge { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 999px; background: white; color: var(--brand-dark); font-weight: 800; }
+    .target-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+
+    main { padding: 24px 0 54px; }
+    .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .filters { padding: 18px; margin-bottom: 20px; }
+    .section-heading { display: flex; gap: 16px; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .section-heading h2, .chart-head h2 { margin: 0; font-size: 1.08rem; letter-spacing: -.01em; }
+    .section-heading p, .chart-head p { margin: 4px 0 0; color: var(--muted); font-size: .86rem; }
+    .filter-grid { display: grid; grid-template-columns: repeat(6, minmax(130px, 1fr)); gap: 12px; }
+    .field { display: grid; gap: 5px; }
+    .field label { color: #385150; font-size: .76rem; font-weight: 800; }
+    .field input, .field select {
+      width: 100%;
+      border: 1px solid #b8c8c4;
+      border-radius: 10px;
+      background: white;
+      color: var(--ink);
+      padding: 8px 10px;
+    }
+    .field-wide { grid-column: span 2; }
+    .button-row { display: flex; gap: 10px; align-items: end; }
+    .btn { border: 1px solid var(--brand); border-radius: 10px; padding: 9px 14px; cursor: pointer; font-weight: 800; }
+    .btn-primary { background: var(--brand); color: white; }
+    .btn-secondary { background: white; color: var(--brand-dark); }
+    .btn:hover { filter: brightness(.96); }
+    .filter-status { margin: 13px 0 0; color: var(--muted); font-size: .84rem; }
+    .filter-status strong { color: var(--ink); }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .kpi { padding: 17px 16px; min-height: 142px; border-top: 4px solid var(--brand); }
+    .kpi[data-status="alert"] { border-top-color: var(--alert); }
+    .kpi-label { margin: 0; color: var(--muted); font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .045em; }
+    .kpi-value { margin: 7px 0 3px; font-size: clamp(1.45rem, 2.3vw, 2.05rem); line-height: 1; font-weight: 850; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    .kpi-meta { margin: 8px 0 0; color: var(--muted); font-size: .78rem; }
+    .status-text { font-weight: 800; }
+    .status-text.bad { color: var(--alert); }
+    .status-text.good { color: var(--ok); }
+    .control-note { display: block; margin-top: 6px; color: #854d0e; font-weight: 700; }
+
+    .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .chart-card { padding: 18px; min-width: 0; }
+    .chart-head { display: flex; justify-content: space-between; gap: 12px; align-items: start; margin-bottom: 8px; }
+    .chart-note { white-space: nowrap; color: var(--muted); font-size: .76rem; }
+    .chart-wrap { width: 100%; min-height: 280px; overflow: hidden; }
+    .chart-wrap svg { display: block; width: 100%; height: auto; min-height: 265px; }
+    .axis-label { fill: #536866; font-size: 12px; }
+    .value-label { fill: #173b3b; font-size: 12px; font-weight: 750; }
+    .grid-line { stroke: #dfe7e5; stroke-width: 1; }
+    .target-line { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 5; }
+    .chart-summary { margin: 3px 0 0; color: var(--muted); font-size: .78rem; }
+
+    .action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-bottom: 20px; overflow: hidden; }
+    .action-block { padding: 20px; }
+    .action-block + .action-block { border-left: 1px solid var(--line); }
+    .action-kicker { margin: 0 0 8px; font-size: .74rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; color: var(--brand); }
+    .action-block h2 { margin: 0 0 10px; font-size: 1.1rem; }
+    .action-block ul { margin: 0; padding-left: 18px; }
+    .action-block li + li { margin-top: 8px; }
+    .action-block.hypothesis { background: #fffaf0; }
+    .action-block.next { background: var(--brand-soft); }
+
+    .table-panel { overflow: hidden; margin-bottom: 20px; }
+    .table-toolbar { padding: 18px; display: flex; gap: 14px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .table-toolbar h2 { margin: 0; font-size: 1.08rem; }
+    .table-toolbar p { margin: 3px 0 0; color: var(--muted); font-size: .82rem; }
+    .table-scroll { overflow-x: auto; max-height: 520px; }
+    table { width: 100%; min-width: 1080px; border-collapse: collapse; font-size: .81rem; }
+    th { position: sticky; top: 0; z-index: 1; background: #e9f0ee; color: #264746; text-align: left; padding: 11px 12px; white-space: nowrap; }
+    td { border-top: 1px solid #e8eeec; padding: 10px 12px; white-space: nowrap; }
+    tbody tr:hover { background: #f4faf8; }
+    .tag { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 8px; font-weight: 800; font-size: .73rem; }
+    .tag-ok { color: #0d5d3c; background: #ddf3e7; }
+    .tag-bad { color: #8f1f18; background: var(--alert-soft); }
+    .empty-state { padding: 54px 18px; text-align: center; color: var(--muted); }
+    .empty-state strong { display: block; color: var(--ink); font-size: 1.08rem; margin-bottom: 6px; }
+
+    .method { padding: 20px; }
+    .method h2 { margin-top: 0; }
+    .method-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; }
+    .method h3 { margin: 0 0 7px; font-size: .94rem; }
+    .method p, .method li { color: var(--muted); font-size: .84rem; }
+    .method ul { padding-left: 18px; }
+    .warning { border-left: 4px solid var(--accent); background: #fff8e8; padding: 12px 14px; border-radius: 8px; color: #6e4807 !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    footer { padding: 22px 0 38px; color: var(--muted); font-size: .78rem; text-align: center; }
+
+    @media (max-width: 1180px) {
+      .filter-grid { grid-template-columns: repeat(4, minmax(130px, 1fr)); }
+      .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 780px) {
+      .shell { width: min(100% - 20px, 1480px); }
+      .hero { padding-top: 25px; }
+      .hero-grid, .chart-grid, .action-grid, .method-grid { grid-template-columns: 1fr; }
+      .meta-stack { justify-items: start; text-align: left; }
+      .filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .field-wide { grid-column: span 2; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .action-block + .action-block { border-left: 0; border-top: 1px solid var(--line); }
+      .table-toolbar { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 460px) {
+      .filter-grid, .kpi-grid { grid-template-columns: 1fr; }
+      .field-wide { grid-column: auto; }
+      .button-row { align-items: stretch; flex-direction: column; }
+      .button-row .btn { width: 100%; }
+      .kpi { min-height: 118px; }
+      .chart-card { padding: 14px 10px; }
+      .chart-note { white-space: normal; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+    @media print {
+      .filters, .btn, footer { display: none !important; }
+      body { background: white; }
+      .panel { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+  <header class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <p class="eyebrow">LogiFresh México · Control operativo</p>
+        <h1 id="hero-title">La operación está 13.3 pp debajo de la meta SLA</h1>
+        <p id="hero-copy" class="hero-copy">Vista ejecutiva para localizar brechas, incidentes y montos registrados sin convertir asociaciones en causas.</p>
+      </div>
+      <div class="meta-stack">
+        <span class="target-badge"><span class="target-dot" aria-hidden="true"></span>Meta SLA: 90% <small>(indicada)</small></span>
+        <span>Periodo: 1 abr–28 jun 2026</span>
+        <span>Fuente sintética · actualización: 2 sep 2026</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="contenido" class="shell">
+    <section class="panel filters" aria-labelledby="filters-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="filters-title">Explorar la operación</h2>
+          <p>Todos los indicadores, gráficas, conclusiones y registros responden a estos filtros.</p>
+        </div>
+      </div>
+      <div class="filter-grid">
+        <div class="field"><label for="fecha-inicio">Desde</label><input id="fecha-inicio" type="date" min="2026-04-01" max="2026-06-28" value="2026-04-01"></div>
+        <div class="field"><label for="fecha-fin">Hasta</label><input id="fecha-fin" type="date" min="2026-04-01" max="2026-06-28" value="2026-06-28"></div>
+        <div class="field"><label for="origen">Origen</label><select id="origen" data-field="origen"><option value="">Todos</option></select></div>
+        <div class="field"><label for="destino">Destino</label><select id="destino" data-field="destino"><option value="">Todos</option></select></div>
+        <div class="field"><label for="producto">Producto</label><select id="producto" data-field="producto"><option value="">Todos</option></select></div>
+        <div class="field"><label for="transportista">Transportista</label><select id="transportista" data-field="transportista"><option value="">Todos</option></select></div>
+        <div class="field"><label for="tipo-ruta">Tipo de ruta</label><select id="tipo-ruta" data-field="tipo_ruta"><option value="">Todos</option></select></div>
+        <div class="field"><label for="sla">Estado SLA</label><select id="sla" data-field="sla_entrega"><option value="">Todos</option></select></div>
+        <div class="field field-wide"><label for="buscar-id">Buscar ID de embarque</label><input id="buscar-id" type="search" placeholder="Ej. LF-0185" autocomplete="off"></div>
+        <div class="button-row field-wide">
+          <button id="restablecer" class="btn btn-secondary" type="button">Restablecer</button>
+          <button id="exportar" class="btn btn-primary" type="button">Descargar vista CSV</button>
+        </div>
+      </div>
+      <p id="filter-status" class="filter-status" aria-live="polite"><strong>240 embarques</strong> · sin filtros de segmento activos</p>
+      <p id="announce" class="sr-only" aria-live="polite"></p>
+    </section>
+
+    <section class="kpi-grid" aria-label="Indicadores clave">
+      <article class="panel kpi"><p class="kpi-label">Embarques</p><p id="kpi-embarques" class="kpi-value">240</p><p id="meta-embarques" class="kpi-meta">240 filas comparables</p></article>
+      <article id="card-sla" class="panel kpi" data-status="alert"><p class="kpi-label">Cumplimiento SLA</p><p id="kpi-sla" class="kpi-value">76.7%</p><p id="meta-sla" class="kpi-meta"><span class="status-text bad">▼ 13.3 pp vs meta 90%</span></p></article>
+      <article class="panel kpi"><p class="kpi-label">Retraso de tardíos</p><p id="kpi-retraso" class="kpi-value">51.8 min</p><p id="meta-retraso" class="kpi-meta">56 tardíos; excluye ceros</p></article>
+      <article class="panel kpi"><p class="kpi-label">Incidentes</p><p id="kpi-incidentes" class="kpi-value">52</p><p id="meta-incidentes" class="kpi-meta">21.7% de los embarques</p></article>
+      <article class="panel kpi"><p class="kpi-label">Excursiones &gt;8 °C</p><p id="kpi-excursiones" class="kpi-value">9</p><p id="meta-excursiones" class="kpi-meta">3.8% de los embarques</p></article>
+      <article class="panel kpi"><p class="kpi-label">Reclamaciones registradas</p><p id="kpi-reclamaciones" class="kpi-value">$882,549</p><p id="meta-reclamaciones" class="kpi-meta">MXN · suma de 240 filas<span class="control-note">⚠ Control: $882,649; diferencia −$100</span></p></article>
+      <article class="panel kpi"><p class="kpi-label">Satisfacción</p><p id="kpi-satisfaccion" class="kpi-value">8.5/10</p><p id="meta-satisfaccion" class="kpi-meta">Promedio simple · n=240</p></article>
+    </section>
+
+    <section class="chart-grid" aria-label="Diagnóstico visual">
+      <article class="panel chart-card">
+        <div class="chart-head"><div><h2>Cumplimiento SLA por mes</h2><p>¿Cuándo se abre la brecha frente a la meta?</p></div><span class="chart-note">Meta 90%</span></div>
+        <div id="chart-trend" class="chart-wrap"></div>
+        <p id="summary-trend" class="chart-summary"></p>
+      </article>
+      <article class="panel chart-card">
+        <div class="chart-head"><div><h2>SLA por producto</h2><p>Ranking recalculado; cada barra inicia en cero.</p></div><span class="chart-note">Tasa y n</span></div>
+        <div id="chart-product" class="chart-wrap"></div>
+        <p id="summary-product" class="chart-summary"></p>
+      </article>
+      <article class="panel chart-card">
+        <div class="chart-head"><div><h2>Incidentes registrados por tipo</h2><p>Frecuencia; la categoría describe qué se registró, no su causa raíz.</p></div><span class="chart-note">Excluye “Sin incidente”</span></div>
+        <div id="chart-incident" class="chart-wrap"></div>
+        <p id="summary-incident" class="chart-summary"></p>
+      </article>
+      <article class="panel chart-card">
+        <div class="chart-head"><div><h2>Reclamaciones por producto</h2><p>Montos asociados en la fuente; no equivalen a pérdida contable confirmada.</p></div><span class="chart-note">MXN</span></div>
+        <div id="chart-claims" class="chart-wrap"></div>
+        <p id="summary-claims" class="chart-summary"></p>
+      </article>
+    </section>
+
+    <section class="panel action-grid" aria-label="Interpretación y acción">
+      <article class="action-block">
+        <p class="action-kicker">Hechos</p>
+        <h2>Lo que muestran los registros filtrados</h2>
+        <ul id="facts-list"></ul>
+      </article>
+      <article class="action-block hypothesis">
+        <p class="action-kicker">Hipótesis</p>
+        <h2>Explicaciones que requieren evidencia adicional</h2>
+        <ul id="hypotheses-list"></ul>
+      </article>
+      <article class="action-block next">
+        <p class="action-kicker">Próximo paso</p>
+        <h2>Piloto de medición durante 30 días</h2>
+        <ul id="next-list"></ul>
+      </article>
+    </section>
+
+    <section class="panel table-panel" aria-labelledby="detail-title">
+      <div class="table-toolbar">
+        <div><h2 id="detail-title">Detalle trazable</h2><p id="table-count">Mostrando 100 de 240 registros; descarga la vista para obtener todos.</p></div>
+        <button class="btn btn-secondary" type="button" id="scroll-top">Volver a filtros</button>
+      </div>
+      <div id="table-container" class="table-scroll" tabindex="0" aria-label="Tabla de embarques filtrados">
+        <table>
+          <thead><tr><th>ID</th><th>Fecha</th><th>Origen</th><th>Destino</th><th>Producto</th><th>Transportista</th><th>SLA</th><th>Retraso</th><th>Incidente</th><th>Excursión &gt;8 °C</th><th>Reclamación</th><th>Satisfacción</th></tr></thead>
+          <tbody id="detail-body"></tbody>
+        </table>
+        <div id="empty-table" class="empty-state" hidden><strong>No hay resultados</strong>Ajusta o restablece los filtros para recuperar la vista.</div>
+      </div>
+    </section>
+
+    <section class="panel method" aria-labelledby="method-title">
+      <h2 id="method-title">Definiciones, fuente y límites</h2>
+      <div class="method-grid">
+        <div>
+          <h3>Método reproducible</h3>
+          <ul>
+            <li><strong>SLA:</strong> embarques con <code>sla_entrega = Cumple</code> / embarques comparables. Meta de 90% indicada por el usuario.</li>
+            <li><strong>Retraso promedio:</strong> promedio de <code>retraso_min</code> sólo donde el valor es mayor que cero.</li>
+            <li><strong>Incidentes:</strong> conteo donde <code>tipo_incidente ≠ Sin incidente</code>.</li>
+            <li><strong>Excursiones:</strong> conteo donde <code>excursion_temp_mayor_8c = Sí</code>.</li>
+            <li><strong>Reclamaciones:</strong> suma de <code>reclamacion_mxn</code>; satisfacción: promedio simple de <code>satisfaccion_1_10</code>.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Alcance y limitaciones</h3>
+          <p>Fuente: <strong>Datos_sinteticos_LogiFresh_dashboard.xlsx</strong>, hojas Datos y Diccionario_y_control. Una fila representa un embarque y la llave es <code>id_embarque</code>. Periodo observado: 1 de abril a 28 de junio de 2026.</p>
+          <p class="warning"><strong>Datos sintéticos.</strong> Los incidentes aparecen sólo en abril y los tardíos sólo en junio. Además, la suma de reclamaciones de las filas es $100 menor que el valor de control. Estas condiciones limitan la generalización y no permiten atribuir causas.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">Dashboard estático sin rastreadores ni dependencias externas · LogiFresh, fuente sintética.</footer>
+  <script src="./data.js"></script>
+  <script>
+    (() => {
+      'use strict';
+      const DATA = Array.isArray(window.LOGIFRESH_DATA) ? window.LOGIFRESH_DATA : [];
+      const SLA_TARGET = 0.90;
+      const CONTROL_CLAIMS = 882649;
+      const selectors = ['origen', 'destino', 'producto', 'transportista'];
+      const fieldMap = { 'tipo-ruta': 'tipo_ruta', 'sla': 'sla_entrega' };
+      const allFilterIds = [...selectors, 'tipo-ruta', 'sla'];
+      const fmtInt = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
+      const fmtMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+      const fmtOne = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+      const el = id => document.getElementById(id);
+      const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+      const pct = value => Number.isFinite(value) ? `${fmtOne.format(value * 100)}%` : 'No calculable';
+      const ratio = (num, den) => den ? num / den : NaN;
+      const mean = values => values.length ? values.reduce((a, b) => a + b, 0) / values.length : NaN;
+      const sum = values => values.reduce((a, b) => a + b, 0);
+      const plural = (n, singular, pluralForm = `${singular}s`) => `${fmtInt.format(n)} ${n === 1 ? singular : pluralForm}`;
+
+      function unique(field) {
+        return [...new Set(DATA.map(row => row[field]).filter(value => value !== null && value !== ''))].sort((a, b) => String(a).localeCompare(String(b), 'es'));
+      }
+
+      function populateFilters() {
+        allFilterIds.forEach(id => {
+          const node = el(id);
+          const field = fieldMap[id] || id;
+          unique(field).forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            node.append(option);
+          });
+        });
+      }
+
+      function filteredRows() {
+        const start = el('fecha-inicio').value;
+        const end = el('fecha-fin').value;
+        const query = el('buscar-id').value.trim().toLocaleLowerCase('es');
+        return DATA.filter(row => {
+          if (start && row.fecha_salida < start) return false;
+          if (end && row.fecha_salida > end) return false;
+          if (query && !String(row.id_embarque).toLocaleLowerCase('es').includes(query)) return false;
+          return allFilterIds.every(id => {
+            const selected = el(id).value;
+            return !selected || row[fieldMap[id] || id] === selected;
+          });
+        });
+      }
+
+      function metrics(rows) {
+        const n = rows.length;
+        const compliant = rows.filter(row => row.sla_entrega === 'Cumple').length;
+        const late = rows.filter(row => Number(row.retraso_min) > 0);
+        const incidents = rows.filter(row => row.tipo_incidente !== 'Sin incidente').length;
+        const excursions = rows.filter(row => row.excursion_temp_mayor_8c === 'Sí').length;
+        return {
+          n,
+          compliant,
+          sla: ratio(compliant, n),
+          lateN: late.length,
+          lateDelay: mean(late.map(row => Number(row.retraso_min))),
+          incidents,
+          excursions,
+          claims: sum(rows.map(row => Number(row.reclamacion_mxn))),
+          satisfaction: mean(rows.map(row => Number(row.satisfaccion_1_10)))
+        };
+      }
+
+      function group(rows, field, measure) {
+        const map = new Map();
+        rows.forEach(row => {
+          const key = row[field];
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(row);
+        });
+        return [...map].map(([label, values]) => ({ label, ...measure(values) }));
+      }
+
+      function setText(id, value) { el(id).textContent = value; }
+
+      function renderKpis(rows, m) {
+        setText('kpi-embarques', fmtInt.format(m.n));
+        setText('meta-embarques', m.n ? `${plural(m.n, 'fila')} comparable${m.n === 1 ? '' : 's'}` : 'Sin filas comparables');
+        setText('kpi-sla', pct(m.sla));
+        const gap = Number.isFinite(m.sla) ? (m.sla - SLA_TARGET) * 100 : NaN;
+        const status = Number.isFinite(gap) ? (gap >= 0 ? `▲ ${fmtOne.format(gap)} pp sobre meta 90%` : `▼ ${fmtOne.format(Math.abs(gap))} pp vs meta 90%`) : 'Sin denominador';
+        el('meta-sla').innerHTML = `<span class="status-text ${gap >= 0 ? 'good' : 'bad'}">${escapeHtml(status)}</span>${m.n ? ` · ${m.compliant}/${m.n}` : ''}`;
+        el('card-sla').dataset.status = gap >= 0 ? 'ok' : 'alert';
+        setText('kpi-retraso', Number.isFinite(m.lateDelay) ? `${fmtOne.format(m.lateDelay)} min` : 'No calculable');
+        setText('meta-retraso', m.lateN ? `${plural(m.lateN, 'tardío')}; excluye ceros` : 'No hay tardíos en la vista');
+        setText('kpi-incidentes', fmtInt.format(m.incidents));
+        setText('meta-incidentes', m.n ? `${pct(m.incidents / m.n)} de los embarques` : 'Sin denominador');
+        setText('kpi-excursiones', fmtInt.format(m.excursions));
+        setText('meta-excursiones', m.n ? `${pct(m.excursions / m.n)} de los embarques` : 'Sin denominador');
+        setText('kpi-reclamaciones', fmtMoney.format(m.claims));
+        const allRows = rows.length === DATA.length;
+        el('meta-reclamaciones').innerHTML = `MXN · suma de ${plural(m.n, 'fila')}${allRows ? `<span class="control-note">⚠ Control: ${fmtMoney.format(CONTROL_CLAIMS)}; diferencia −${fmtMoney.format(CONTROL_CLAIMS - m.claims)}</span>` : ''}`;
+        setText('kpi-satisfaccion', Number.isFinite(m.satisfaction) ? `${fmtOne.format(m.satisfaction)}/10` : 'No calculable');
+        setText('meta-satisfaccion', m.n ? `Promedio simple · n=${m.n}` : 'Sin observaciones');
+      }
+
+      function emptyChart(title, message = 'No hay datos para los filtros activos') {
+        return `<svg viewBox="0 0 640 280" role="img" aria-label="${escapeHtml(title)}: sin datos"><title>${escapeHtml(title)}: sin datos</title><rect x="0" y="0" width="640" height="280" fill="#fbfdfc"/><text x="320" y="136" text-anchor="middle" class="value-label">Sin datos</text><text x="320" y="160" text-anchor="middle" class="axis-label">${escapeHtml(message)}</text></svg>`;
+      }
+
+      function renderBarChart(containerId, items, options) {
+        const container = el(containerId);
+        if (!items.length) { container.innerHTML = emptyChart(options.title); return; }
+        const sorted = [...items].sort((a, b) => b.value - a.value);
+        const width = 640;
+        const left = 150;
+        const right = 70;
+        const top = 25;
+        const rowH = Math.max(36, Math.min(52, 230 / sorted.length));
+        const height = Math.max(265, top + sorted.length * rowH + 38);
+        const plotW = width - left - right;
+        const domainMax = options.domainMax ?? Math.max(...sorted.map(item => item.value), 1);
+        const x = value => left + Math.max(0, Math.min(1, value / domainMax)) * plotW;
+        let svg = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeHtml(options.title)}"><title>${escapeHtml(options.title)}</title>`;
+        [0, .25, .5, .75, 1].forEach(t => {
+          const xx = left + plotW * t;
+          svg += `<line x1="${xx}" y1="${top - 5}" x2="${xx}" y2="${height - 30}" class="grid-line"/><text x="${xx}" y="${height - 10}" text-anchor="middle" class="axis-label">${escapeHtml(options.tick(domainMax * t))}</text>`;
+        });
+        if (Number.isFinite(options.target)) {
+          const tx = x(options.target);
+          svg += `<line x1="${tx}" y1="${top - 8}" x2="${tx}" y2="${height - 30}" class="target-line"/><text x="${tx - 4}" y="14" text-anchor="end" class="axis-label">meta 90%</text>`;
+        }
+        sorted.forEach((item, index) => {
+          const y = top + index * rowH;
+          const barW = Math.max(0, x(item.value) - left);
+          const fill = options.rate && item.value < SLA_TARGET ? '#c24136' : '#0f766e';
+          svg += `<text x="${left - 9}" y="${y + 19}" text-anchor="end" class="axis-label">${escapeHtml(item.label)}</text>`;
+          svg += `<rect x="${left}" y="${y + 3}" width="${barW}" height="22" rx="4" fill="${fill}"/>`;
+          svg += `<text x="${Math.min(x(item.value) + 7, width - 64)}" y="${y + 19}" class="value-label">${escapeHtml(options.value(item))}</text>`;
+        });
+        svg += '</svg>';
+        container.innerHTML = svg;
+      }
+
+      function renderTrend(rows) {
+        const monthMap = new Map();
+        rows.forEach(row => {
+          const month = row.fecha_salida.slice(0, 7);
+          if (!monthMap.has(month)) monthMap.set(month, []);
+          monthMap.get(month).push(row);
+        });
+        const series = [...monthMap].sort().map(([month, values]) => ({ month, value: metrics(values).sla, n: values.length }));
+        const container = el('chart-trend');
+        if (!series.length) { container.innerHTML = emptyChart('Cumplimiento SLA por mes'); setText('summary-trend', 'Sin meses comparables.'); return; }
+        const width = 640, height = 280, left = 54, right = 30, top = 25, bottom = 48;
+        const plotW = width - left - right, plotH = height - top - bottom;
+        const x = i => series.length === 1 ? left + plotW / 2 : left + i * plotW / (series.length - 1);
+        const y = v => top + (1 - v) * plotH;
+        const monthLabel = month => ({'2026-04':'Abr','2026-05':'May','2026-06':'Jun'}[month] || month);
+        let svg = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Cumplimiento SLA mensual frente a meta de 90%"><title>Cumplimiento SLA mensual frente a meta de 90%</title>`;
+        [0, .25, .5, .75, 1].forEach(t => { const yy = y(t); svg += `<line x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}" class="grid-line"/><text x="${left-8}" y="${yy+4}" text-anchor="end" class="axis-label">${Math.round(t*100)}%</text>`; });
+        svg += `<line x1="${left}" y1="${y(SLA_TARGET)}" x2="${width-right}" y2="${y(SLA_TARGET)}" class="target-line"/><text x="${width-right}" y="${y(SLA_TARGET)-7}" text-anchor="end" class="axis-label">Meta 90%</text>`;
+        if (series.length > 1) svg += `<polyline points="${series.map((item,i)=>`${x(i)},${y(item.value)}`).join(' ')}" fill="none" stroke="#0f766e" stroke-width="4" stroke-linejoin="round"/>`;
+        series.forEach((item, i) => {
+          svg += `<circle cx="${x(i)}" cy="${y(item.value)}" r="6" fill="#0f766e" stroke="white" stroke-width="3"/>`;
+          svg += `<text x="${x(i)}" y="${Math.max(15,y(item.value)-12)}" text-anchor="middle" class="value-label">${pct(item.value)}</text>`;
+          svg += `<text x="${x(i)}" y="${height-20}" text-anchor="middle" class="axis-label">${monthLabel(item.month)} · n=${item.n}</text>`;
+        });
+        svg += '</svg>';
+        container.innerHTML = svg;
+        const low = [...series].sort((a,b)=>a.value-b.value)[0];
+        setText('summary-trend', `Menor tasa en ${monthLabel(low.month)}: ${pct(low.value)} (n=${low.n}). La concentración temporal exige validar el proceso de generación/captura.`);
+      }
+
+      function renderCharts(rows) {
+        renderTrend(rows);
+        const products = group(rows, 'producto', values => ({ value: metrics(values).sla, n: values.length }));
+        renderBarChart('chart-product', products.filter(item => Number.isFinite(item.value)), {
+          title: 'SLA por producto', domainMax: 1, target: SLA_TARGET, rate: true,
+          tick: value => `${Math.round(value * 100)}%`, value: item => `${pct(item.value)} · n=${item.n}`
+        });
+        if (products.length) {
+          const low = [...products].sort((a,b)=>a.value-b.value)[0];
+          setText('summary-product', `${low.label} muestra la menor tasa: ${pct(low.value)} (n=${low.n}); la diferencia entre productos es pequeña.`);
+        } else setText('summary-product', 'Sin productos comparables.');
+
+        const incidents = group(rows.filter(row => row.tipo_incidente !== 'Sin incidente'), 'tipo_incidente', values => ({ value: values.length }));
+        renderBarChart('chart-incident', incidents, {
+          title: 'Incidentes registrados por tipo', tick: value => fmtInt.format(value), value: item => plural(item.value, 'caso')
+        });
+        if (incidents.length) {
+          const top = [...incidents].sort((a,b)=>b.value-a.value)[0];
+          setText('summary-incident', `${top.label} es la categoría más frecuente: ${plural(top.value, 'caso')}. Esto no demuestra la causa del desempeño SLA.`);
+        } else setText('summary-incident', 'No hay incidentes registrados en la vista.');
+
+        const claims = group(rows, 'producto', values => ({ value: sum(values.map(row => Number(row.reclamacion_mxn))) }));
+        renderBarChart('chart-claims', claims, {
+          title: 'Reclamaciones registradas por producto', tick: value => `$${fmtInt.format(value/1000)} mil`, value: item => fmtMoney.format(item.value)
+        });
+        if (claims.length) {
+          const top = [...claims].sort((a,b)=>b.value-a.value)[0];
+          const total = sum(claims.map(item => item.value));
+          setText('summary-claims', `${top.label} concentra ${fmtMoney.format(top.value)} (${total ? pct(top.value/total) : '0.0%'} del monto filtrado).`);
+        } else setText('summary-claims', 'Sin montos para los filtros activos.');
+      }
+
+      function renderActions(rows, m) {
+        const overlap = rows.filter(row => row.tipo_incidente !== 'Sin incidente' && Number(row.retraso_min) > 0).length;
+        const facts = m.n ? [
+          `${m.compliant} de ${m.n} embarques cumplen el SLA (${pct(m.sla)}).`,
+          `${plural(m.incidents, 'incidente')} y ${plural(m.excursions, 'excursión', 'excursiones')} mayor${m.excursions === 1 ? '' : 'es'} a 8 °C están registrados.`,
+          `Las reclamaciones suman ${fmtMoney.format(m.claims)} y la satisfacción promedio es ${fmtOne.format(m.satisfaction)}/10.`
+        ] : ['No hay embarques para los filtros activos.'];
+        const hypotheses = m.n ? [
+          overlap === 0
+            ? 'La ausencia de superposición entre tardíos e incidentes podría reflejar una secuencia sintética o un desfase de captura; no prueba que sean fenómenos independientes.'
+            : `${plural(overlap, 'embarque')} combina retraso e incidente; esta asociación no identifica qué ocurrió primero ni demuestra causalidad.`,
+          'La brecha frente al 90% podría relacionarse con programación, ventanas de entrega o medición; hacen falta timestamps y evidencia operativa para distinguirlas.'
+        ] : ['No se formulan hipótesis sobre una población vacía.'];
+        const next = [
+          'Durante 30 días, capturar salida planificada/real, llegada comprometida/real, inicio y cierre del incidente y evidencia de temperatura.',
+          'Revisar semanalmente SLA (cumple/total), retraso mediano y P90, excursiones y completitud de timestamps; separar siempre conteo y tasa.',
+          'Al día 30, comparar contra esta línea base sólo si definición y cobertura son equivalentes; mantener, ajustar o retirar el piloto según la evidencia.'
+        ];
+        el('facts-list').innerHTML = facts.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+        el('hypotheses-list').innerHTML = hypotheses.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+        el('next-list').innerHTML = next.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+      }
+
+      function renderHeadline(m) {
+        if (!m.n) {
+          setText('hero-title', 'No hay embarques para esta combinación de filtros');
+          setText('hero-copy', 'Ajusta o restablece los filtros; los componentes muestran explícitamente el estado sin datos.');
+          return;
+        }
+        const gap = (m.sla - SLA_TARGET) * 100;
+        const scope = m.n === DATA.length ? 'La operación' : 'La vista filtrada';
+        setText('hero-title', gap >= 0
+          ? `${scope} está ${fmtOne.format(gap)} pp sobre la meta SLA`
+          : `${scope} está ${fmtOne.format(Math.abs(gap))} pp debajo de la meta SLA`);
+        setText('hero-copy', `${m.compliant} de ${m.n} embarques cumplen. Explora brechas y montos sin convertir asociaciones en causas.`);
+      }
+
+      function renderTable(rows) {
+        const table = el('detail-body');
+        const empty = el('empty-table');
+        const visible = rows.slice(0, 100);
+        empty.hidden = rows.length > 0;
+        table.closest('table').hidden = rows.length === 0;
+        table.innerHTML = visible.map(row => `<tr>
+          <td><strong>${escapeHtml(row.id_embarque)}</strong></td>
+          <td>${escapeHtml(row.fecha_salida)}</td><td>${escapeHtml(row.origen)}</td><td>${escapeHtml(row.destino)}</td>
+          <td>${escapeHtml(row.producto)}</td><td>${escapeHtml(row.transportista)}</td>
+          <td><span class="tag ${row.sla_entrega === 'Cumple' ? 'tag-ok' : 'tag-bad'}">${row.sla_entrega === 'Cumple' ? '✓' : '!'} ${escapeHtml(row.sla_entrega)}</span></td>
+          <td>${fmtOne.format(Number(row.retraso_min))} min</td><td>${escapeHtml(row.tipo_incidente)}</td>
+          <td>${escapeHtml(row.excursion_temp_mayor_8c)}</td><td>${fmtMoney.format(Number(row.reclamacion_mxn))}</td><td>${escapeHtml(row.satisfaccion_1_10)}/10</td>
+        </tr>`).join('');
+        setText('table-count', rows.length ? `Mostrando ${Math.min(rows.length,100)} de ${rows.length} registros; descarga la vista para obtener todos.` : '0 registros. Ajusta los filtros.');
+      }
+
+      function activeFilterText(rows) {
+        const active = [];
+        const start = el('fecha-inicio').value, end = el('fecha-fin').value;
+        if (start !== '2026-04-01' || end !== '2026-06-28') active.push(`fecha ${start || 'inicio'} a ${end || 'fin'}`);
+        allFilterIds.forEach(id => { if (el(id).value) active.push(`${el(id).labels[0].textContent}: ${el(id).value}`); });
+        if (el('buscar-id').value.trim()) active.push(`ID: ${el('buscar-id').value.trim()}`);
+        el('filter-status').innerHTML = `<strong>${plural(rows.length, 'embarque')}</strong> · ${active.length ? escapeHtml(active.join(' · ')) : 'sin filtros de segmento activos'}`;
+      }
+
+      function update() {
+        const rows = filteredRows();
+        const m = metrics(rows);
+        activeFilterText(rows);
+        renderHeadline(m);
+        renderKpis(rows, m);
+        renderCharts(rows);
+        renderActions(rows, m);
+        renderTable(rows);
+        window.__dashboardState = { filteredCount: rows.length, metrics: m, ids: rows.map(row => row.id_embarque) };
+      }
+
+      function resetFilters() {
+        el('fecha-inicio').value = '2026-04-01';
+        el('fecha-fin').value = '2026-06-28';
+        allFilterIds.forEach(id => { el(id).value = ''; });
+        el('buscar-id').value = '';
+        update();
+        setText('announce', 'Filtros restablecidos. Se muestran los 240 embarques.');
+      }
+
+      function exportCsv() {
+        const rows = filteredRows();
+        if (!rows.length) { setText('announce', 'No hay datos para descargar.'); return; }
+        const columns = Object.keys(rows[0]);
+        const quote = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+        const csv = '\ufeff' + [columns.join(','), ...rows.map(row => columns.map(column => quote(row[column])).join(','))].join('\r\n');
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        const link = document.createElement('a');
+        link.href = url; link.download = 'logifresh_vista_filtrada.csv'; document.body.append(link); link.click(); link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setText('announce', `Descarga preparada con ${plural(rows.length, 'registro')}.`);
+      }
+
+      populateFilters();
+      allFilterIds.forEach(id => el(id).addEventListener('change', update));
+      ['fecha-inicio','fecha-fin'].forEach(id => el(id).addEventListener('change', update));
+      el('buscar-id').addEventListener('input', update);
+      el('restablecer').addEventListener('click', resetFilters);
+      el('exportar').addEventListener('click', exportCsv);
+      el('scroll-top').addEventListener('click', () => { el('filters-title').scrollIntoView(); el('fecha-inicio').focus({preventScroll:true}); });
+      update();
+    })();
+  </script>
+</body>
+</html>
